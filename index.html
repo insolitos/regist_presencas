@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="pt-PT" class="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registo Simplificado de Presenças</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Estilos personalizados */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .tab-button.active {
+            border-color: #3b82f6; /* blue-500 */
+            color: #3b82f6;
+            background-color: #eff6ff; /* blue-50 */
+        }
+        .dark .tab-button.active {
+            border-color: #60a5fa; /* blue-400 */
+            color: #60a5fa;
+            background-color: #1e293b; /* slate-800 */
+        }
+        .status-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .status-presente { background-color: #16a34a; color: white; } /* green-600 */
+        .status-ausente { background-color: #dc2626; color: white; } /* red-600 */
+        .status-atraso { background-color: #f97316; color: white; } /* orange-500 */
+        
+        .dark .status-presente { background-color: #22c55e; } /* green-500 */
+        .dark .status-ausente { background-color: #ef4444; } /* red-500 */
+        .dark .status-atraso { background-color: #f97316; } /* orange-500 */
+
+        /* Animação de entrada */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+    </style>
+    <script>
+        // Configuração do Tailwind para modo escuro
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 transition-colors duration-300">
+
+    <!-- Container Principal -->
+    <div id="app" class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+
+        <!-- Cabeçalho -->
+        <header class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">Registo de Presenças</h1>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Gestão de presenças para aulas e formações.</p>
+            </div>
+            <button id="theme-toggle" class="p-2 rounded-full text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <i class="fas fa-sun" id="theme-icon-light"></i>
+                <i class="fas fa-moon" id="theme-icon-dark"></i>
+            </button>
+        </header>
+
+        <!-- Navegação por Abas -->
+        <div class="mb-6 border-b border-slate-200 dark:border-slate-700">
+            <nav class="flex space-x-2 sm:space-x-4" aria-label="Tabs">
+                <button data-tab="registo" class="tab-button active font-medium px-3 py-2 text-sm sm:text-base rounded-t-lg border-b-2 border-transparent hover:text-blue-500">
+                    <i class="fas fa-check-circle mr-2"></i>Registo
+                </button>
+                <button data-tab="alunos" class="tab-button font-medium px-3 py-2 text-sm sm:text-base rounded-t-lg border-b-2 border-transparent hover:text-blue-500">
+                    <i class="fas fa-users mr-2"></i>Alunos
+                </button>
+                <button data-tab="turmas" class="tab-button font-medium px-3 py-2 text-sm sm:text-base rounded-t-lg border-b-2 border-transparent hover:text-blue-500">
+                    <i class="fas fa-chalkboard-teacher mr-2"></i>Turmas
+                </button>
+                <button data-tab="relatorios" class="tab-button font-medium px-3 py-2 text-sm sm:text-base rounded-t-lg border-b-2 border-transparent hover:text-blue-500">
+                    <i class="fas fa-chart-pie mr-2"></i>Relatórios
+                </button>
+            </nav>
+        </div>
+
+        <!-- Conteúdo das Abas -->
+        <main>
+            <!-- Aba de Registo -->
+            <div id="tab-content-registo" class="tab-content">
+                <div class="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-md">
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+                        <div class="flex-grow">
+                            <label for="group-select-registo" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Selecionar Turma:</label>
+                            <select id="group-select-registo" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 focus:ring-blue-500 focus:border-blue-500"></select>
+                        </div>
+                        <div class="flex-grow">
+                            <label for="class-select" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Selecionar Aula/Sessão:</label>
+                            <select id="class-select" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 focus:ring-blue-500 focus:border-blue-500"></select>
+                        </div>
+                        <button id="add-class-btn" class="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md transition-transform transform hover:scale-105">
+                            <i class="fas fa-plus mr-2"></i>Nova Aula
+                        </button>
+                    </div>
+                    <div id="attendance-list" class="space-y-3">
+                        <!-- A lista de presenças será inserida aqui -->
+                    </div>
+                     <div id="no-students-registo" class="text-center py-8 text-slate-500 dark:text-slate-400 hidden">
+                        <i class="fas fa-user-graduate fa-3x mb-4"></i>
+                        <p class="font-semibold">Nenhum aluno nesta turma.</p>
+                        <p>Vá à aba "Alunos" para adicionar.</p>
+                    </div>
+                    <div id="no-class-registo" class="text-center py-8 text-slate-500 dark:text-slate-400 hidden">
+                        <i class="fas fa-school fa-3x mb-4"></i>
+                        <p class="font-semibold">Nenhuma aula para esta turma.</p>
+                        <p>Clique em "Nova Aula" para criar a primeira.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba de Alunos -->
+            <div id="tab-content-alunos" class="tab-content hidden">
+                <div class="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-md">
+                    <div class="mb-6">
+                        <label for="group-select-alunos" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Gerir Alunos da Turma:</label>
+                        <select id="group-select-alunos" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 focus:ring-blue-500 focus:border-blue-500"></select>
+                    </div>
+                    <div id="student-management-area">
+                        <h2 class="text-xl font-bold mb-4">Adicionar Aluno</h2>
+                        <div class="flex gap-4 mb-6">
+                            <input type="text" id="new-student-name" placeholder="Nome do novo aluno" class="flex-grow p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 focus:ring-blue-500 focus:border-blue-500">
+                            <button id="add-student-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md transition-transform transform hover:scale-105">
+                                <i class="fas fa-user-plus mr-2"></i>Adicionar
+                            </button>
+                        </div>
+                        <h2 class="text-xl font-bold mb-4">Lista de Alunos</h2>
+                        <div id="student-list" class="space-y-2">
+                            <!-- A lista de alunos será inserida aqui -->
+                        </div>
+                        <div id="no-students-gestao" class="text-center py-8 text-slate-500 dark:text-slate-400 hidden">
+                            <i class="fas fa-users-slash fa-3x mb-4"></i>
+                            <p class="font-semibold">Ainda não há alunos nesta turma.</p>
+                            <p>Use o campo acima para começar a adicioná-los.</p>
+                        </div>
+                    </div>
+                    <div id="no-group-selected-alunos" class="text-center py-8 text-slate-500 dark:text-slate-400">
+                        <i class="fas fa-chalkboard fa-3x mb-4"></i>
+                        <p class="font-semibold">Nenhuma turma selecionada.</p>
+                        <p>Vá à aba "Turmas" para criar a sua primeira turma.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba de Turmas -->
+            <div id="tab-content-turmas" class="tab-content hidden">
+                <div class="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-bold mb-4">Gerir Turmas</h2>
+                    <div class="flex gap-4 mb-6">
+                        <input type="text" id="new-group-name" placeholder="Nome da nova turma" class="flex-grow p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 focus:ring-blue-500 focus:border-blue-500">
+                        <button id="add-group-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md transition-transform transform hover:scale-105">
+                            <i class="fas fa-plus mr-2"></i>Adicionar Turma
+                        </button>
+                    </div>
+                    <div id="group-list" class="space-y-2">
+                        <!-- A lista de turmas será inserida aqui -->
+                    </div>
+                     <div id="no-groups-gestao" class="text-center py-8 text-slate-500 dark:text-slate-400 hidden">
+                        <i class="fas fa-school fa-3x mb-4"></i>
+                        <p class="font-semibold">Ainda não há turmas.</p>
+                        <p>Use o campo acima para criar a primeira.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba de Relatórios -->
+            <div id="tab-content-relatorios" class="tab-content hidden">
+                <div id="report-content" class="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-md">
+                    <!-- O conteúdo do relatório será gerado aqui -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal para Notas -->
+    <div id="notes-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-md transform transition-all scale-95 opacity-0" id="notes-modal-content">
+            <h3 class="text-lg font-bold mb-4">Adicionar Nota</h3>
+            <textarea id="notes-textarea" rows="4" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 focus:ring-blue-500 focus:border-blue-500" placeholder="Motivo da ausência ou atraso..."></textarea>
+            <div class="mt-4 flex justify-end space-x-3">
+                <button id="cancel-note-btn" class="px-4 py-2 bg-slate-200 dark:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-md hover:bg-slate-300 dark:hover:bg-slate-500">Cancelar</button>
+                <button id="save-note-btn" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- ESTADO DA APLICAÇÃO ---
+        let state = {
+            groups: [], // { id, name }
+            students: [], // { id, name, groupId }
+            classes: [], // { id, name, groupId }
+            attendance: {}, // { "classId": { "studentId": { status: 'presente', note: '' } } }
+            currentGroupId: null,
+            currentClassId: null,
+            theme: 'light'
+        };
+
+        // --- ELEMENTOS DO DOM ---
+        // ... (elementos gerais)
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIconLight = document.getElementById('theme-icon-light');
+        const themeIconDark = document.getElementById('theme-icon-dark');
+        const tabs = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        // Elementos de Turmas
+        const newGroupNameInput = document.getElementById('new-group-name');
+        const addGroupBtn = document.getElementById('add-group-btn');
+        const groupList = document.getElementById('group-list');
+        const groupSelectAlunos = document.getElementById('group-select-alunos');
+        const groupSelectRegisto = document.getElementById('group-select-registo');
+
+        // Elementos de Alunos
+        const studentManagementArea = document.getElementById('student-management-area');
+        const noGroupSelectedAlunos = document.getElementById('no-group-selected-alunos');
+        const newStudentNameInput = document.getElementById('new-student-name');
+        const addStudentBtn = document.getElementById('add-student-btn');
+        const studentList = document.getElementById('student-list');
+
+        // Elementos de Registo
+        const classSelect = document.getElementById('class-select');
+        const addClassBtn = document.getElementById('add-class-btn');
+        const attendanceList = document.getElementById('attendance-list');
+        
+        // Elementos de Relatórios
+        const reportContent = document.getElementById('report-content');
+        
+        // Elementos do Modal
+        const notesModal = document.getElementById('notes-modal');
+        const notesModalContent = document.getElementById('notes-modal-content');
+        const notesTextarea = document.getElementById('notes-textarea');
+        const saveNoteBtn = document.getElementById('save-note-btn');
+        const cancelNoteBtn = document.getElementById('cancel-note-btn');
+        
+        let studentIdForNote = null;
+
+        const statusConfig = {
+            ausente: { text: 'Ausente', icon: 'fa-times-circle', color: 'status-ausente', next: 'presente' },
+            presente: { text: 'Presente', icon: 'fa-check-circle', color: 'status-presente', next: 'atraso' },
+            atraso: { text: 'Atraso', icon: 'fa-clock', color: 'status-atraso', next: 'ausente' }
+        };
+
+        // --- FUNÇÕES DE DADOS ---
+        const saveState = () => {
+            localStorage.setItem('attendanceApp', JSON.stringify(state));
+        };
+
+        const loadState = () => {
+            const savedState = localStorage.getItem('attendanceApp');
+            if (savedState) {
+                state = JSON.parse(savedState);
+            } else {
+                // Estado inicial para novos utilizadores
+                const groupId = `g_${Date.now()}`;
+                const studentId1 = `s_${Date.now()}_1`;
+                const studentId2 = `s_${Date.now()}_2`;
+                const classId = `c_${Date.now()}`;
+                
+                state = {
+                    groups: [{ id: groupId, name: 'Turma de Exemplo' }],
+                    students: [
+                        { id: studentId1, name: 'Ana Silva', groupId: groupId },
+                        { id: studentId2, name: 'Bruno Costa', groupId: groupId }
+                    ],
+                    classes: [{ id: classId, name: `Aula de Exemplo - ${new Date().toLocaleDateString('pt-PT')}`, groupId: groupId }],
+                    attendance: {
+                        [classId]: {
+                            [studentId1]: { status: 'presente', note: '' },
+                            [studentId2]: { status: 'ausente', note: 'Justificou' }
+                        }
+                    },
+                    currentGroupId: groupId,
+                    currentClassId: classId,
+                    theme: 'light'
+                };
+                saveState();
+            }
+        };
+
+        // --- FUNÇÕES DE RENDERIZAÇÃO ---
+        const renderAll = () => {
+            renderGroupSelectors();
+            renderGroups();
+            renderStudents();
+            renderClasses();
+            renderAttendanceList();
+            updatePlaceholders();
+        };
+
+        const updatePlaceholders = () => {
+            // Placeholders de Turmas
+            document.getElementById('no-groups-gestao').classList.toggle('hidden', state.groups.length > 0);
+            
+            // Placeholders de Alunos
+            const hasGroups = state.groups.length > 0;
+            studentManagementArea.classList.toggle('hidden', !hasGroups);
+            noGroupSelectedAlunos.classList.toggle('hidden', hasGroups);
+            if (state.currentGroupId) {
+                const studentsInGroup = state.students.filter(s => s.groupId === state.currentGroupId);
+                document.getElementById('no-students-gestao').classList.toggle('hidden', studentsInGroup.length > 0);
+            }
+
+            // Placeholders de Registo
+            const classesInGroup = state.classes.filter(c => c.groupId === state.currentGroupId);
+            document.getElementById('no-class-registo').classList.toggle('hidden', !state.currentGroupId || classesInGroup.length > 0);
+            attendanceList.innerHTML = ''; // Limpa a lista para não mostrar alunos de outra turma
+            if (state.currentClassId) {
+                const classInfo = state.classes.find(c => c.id === state.currentClassId);
+                if (classInfo) {
+                    const studentsInClassGroup = state.students.filter(s => s.groupId === classInfo.groupId);
+                    document.getElementById('no-students-registo').classList.toggle('hidden', studentsInClassGroup.length > 0);
+                }
+            } else {
+                 document.getElementById('no-students-registo').classList.add('hidden');
+            }
+        };
+
+        const renderGroupSelectors = () => {
+            const selects = [groupSelectAlunos, groupSelectRegisto];
+            selects.forEach(select => {
+                select.innerHTML = '';
+                if (state.groups.length === 0) {
+                    select.innerHTML = '<option>Crie uma turma primeiro</option>';
+                } else {
+                    state.groups.forEach(group => {
+                        const option = document.createElement('option');
+                        option.value = group.id;
+                        option.textContent = group.name;
+                        if (group.id === state.currentGroupId) {
+                            option.selected = true;
+                        }
+                        select.appendChild(option);
+                    });
+                }
+            });
+        };
+
+        const renderGroups = () => {
+            groupList.innerHTML = '';
+            state.groups.forEach(group => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between p-3 bg-slate-100 dark:bg-slate-700 rounded-lg fade-in';
+                div.innerHTML = `
+                    <span class="font-medium">${group.name}</span>
+                    <button data-group-id="${group.id}" class="delete-group-btn text-red-500 hover:text-red-700 dark:hover:text-red-400 p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                `;
+                groupList.appendChild(div);
+            });
+            updatePlaceholders();
+        };
+
+        const renderStudents = () => {
+            studentList.innerHTML = '';
+            if (!state.currentGroupId) {
+                updatePlaceholders();
+                return;
+            }
+            const studentsInGroup = state.students.filter(s => s.groupId === state.currentGroupId);
+            studentsInGroup.forEach(student => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between p-3 bg-slate-100 dark:bg-slate-700 rounded-lg fade-in';
+                div.innerHTML = `
+                    <span class="font-medium">${student.name}</span>
+                    <button data-student-id="${student.id}" class="delete-student-btn text-red-500 hover:text-red-700 dark:hover:text-red-400 p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                `;
+                studentList.appendChild(div);
+            });
+            updatePlaceholders();
+        };
+
+        const renderClasses = () => {
+            classSelect.innerHTML = '';
+            if (!state.currentGroupId) {
+                classSelect.innerHTML = '<option>Selecione uma turma</option>';
+                state.currentClassId = null;
+                return;
+            }
+            const classesInGroup = state.classes.filter(c => c.groupId === state.currentGroupId);
+            if (classesInGroup.length === 0) {
+                classSelect.innerHTML = '<option>Crie uma aula para esta turma</option>';
+                state.currentClassId = null;
+            } else {
+                classesInGroup.forEach(cls => {
+                    const option = document.createElement('option');
+                    option.value = cls.id;
+                    option.textContent = cls.name;
+                    if (cls.id === state.currentClassId) {
+                        option.selected = true;
+                    }
+                    classSelect.appendChild(option);
+                });
+                // Garante que currentClassId é válido para a turma atual
+                if (!classesInGroup.some(c => c.id === state.currentClassId)) {
+                    state.currentClassId = classesInGroup[0]?.id || null;
+                    if (state.currentClassId) classSelect.value = state.currentClassId;
+                }
+            }
+            updatePlaceholders();
+        };
+
+        const renderAttendanceList = () => {
+            attendanceList.innerHTML = '';
+            if (!state.currentClassId) {
+                updatePlaceholders();
+                return;
+            }
+            const classInfo = state.classes.find(c => c.id === state.currentClassId);
+            if (!classInfo) return;
+
+            const studentsInGroup = state.students.filter(s => s.groupId === classInfo.groupId);
+            const currentAttendance = state.attendance[state.currentClassId] || {};
+
+            studentsInGroup.forEach(student => {
+                const attendanceRecord = currentAttendance[student.id] || { status: 'ausente', note: '' };
+                const status = attendanceRecord.status;
+                const config = statusConfig[status];
+
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between p-3 bg-slate-100 dark:bg-slate-700 rounded-lg shadow-sm fade-in';
+                
+                const studentName = document.createElement('span');
+                studentName.className = 'font-semibold text-base';
+                studentName.textContent = student.name;
+                
+                const noteIcon = attendanceRecord.note ? `<i class="fas fa-comment-dots text-blue-400 ml-2" title="${attendanceRecord.note}"></i>` : '';
+                studentName.innerHTML += noteIcon;
+
+                const button = document.createElement('button');
+                button.dataset.studentId = student.id;
+                button.className = `status-btn w-32 text-left px-4 py-2 rounded-md font-semibold ${config.color}`;
+                button.innerHTML = `<i class="fas ${config.icon} mr-2 w-4"></i>${config.text}`;
+
+                div.appendChild(studentName);
+                div.appendChild(button);
+                attendanceList.appendChild(div);
+            });
+            updatePlaceholders();
+        };
+        
+        const renderReport = () => {
+            reportContent.innerHTML = '<h2 class="text-xl font-bold mb-4">Relatório de Presenças por Turma</h2>';
+            if (state.groups.length === 0) {
+                reportContent.innerHTML += '<p class="text-slate-500">Não há turmas para gerar relatórios.</p>';
+                return;
+            }
+
+            state.groups.forEach(group => {
+                const groupReport = document.createElement('div');
+                groupReport.className = 'mb-8 p-4 border border-slate-200 dark:border-slate-700 rounded-lg';
+                groupReport.innerHTML = `<h3 class="text-2xl font-bold mb-4 text-blue-600 dark:text-blue-400">${group.name}</h3>`;
+                
+                const classesInGroup = state.classes.filter(c => c.groupId === group.id);
+                const studentsInGroup = state.students.filter(s => s.groupId === group.id);
+
+                if (classesInGroup.length === 0) {
+                    groupReport.innerHTML += '<p class="text-slate-500">Esta turma não tem aulas registadas.</p>';
+                } else {
+                    classesInGroup.forEach(cls => {
+                        const classAttendance = state.attendance[cls.id] || {};
+                        const stats = { presente: 0, ausente: 0, atraso: 0, total: studentsInGroup.length };
+                        const notes = [];
+
+                        studentsInGroup.forEach(student => {
+                            const record = classAttendance[student.id] || { status: 'ausente' };
+                            stats[record.status]++;
+                            if (record.note) {
+                                notes.push({ studentName: student.name, note: record.note, status: record.status });
+                            }
+                        });
+
+                        const classReport = document.createElement('div');
+                        classReport.className = 'mb-6';
+                        const percentage = (count) => stats.total > 0 ? ((count / stats.total) * 100).toFixed(0) : 0;
+
+                        classReport.innerHTML = `
+                            <h4 class="font-bold text-lg mb-3">${cls.name}</h4>
+                            <div class="space-y-2 mb-4">
+                                <div class="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-6 flex overflow-hidden">
+                                    <div class="bg-green-500 h-6 flex items-center justify-center text-xs font-bold text-white" style="width: ${percentage(stats.presente)}%" title="Presentes">${percentage(stats.presente)}%</div>
+                                    <div class="bg-orange-500 h-6 flex items-center justify-center text-xs font-bold text-white" style="width: ${percentage(stats.atraso)}%" title="Atrasos">${percentage(stats.atraso)}%</div>
+                                    <div class="bg-red-500 h-6 flex items-center justify-center text-xs font-bold text-white" style="width: ${percentage(stats.ausente)}%" title="Ausentes">${percentage(stats.ausente)}%</div>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span><i class="fas fa-check-circle text-green-500"></i> ${stats.presente} Presentes</span>
+                                    <span><i class="fas fa-clock text-orange-500"></i> ${stats.atraso} Atrasos</span>
+                                    <span><i class="fas fa-times-circle text-red-500"></i> ${stats.ausente} Ausentes</span>
+                                </div>
+                            </div>
+                        `;
+
+                        if (notes.length > 0) {
+                            const notesList = document.createElement('div');
+                            notesList.innerHTML = '<h5 class="font-semibold mt-4 mb-2">Notas:</h5>';
+                            const ul = document.createElement('ul');
+                            ul.className = 'list-disc list-inside space-y-1 text-sm';
+                            notes.forEach(n => {
+                                const li = document.createElement('li');
+                                li.innerHTML = `<strong class="capitalize">${n.status}</strong> - ${n.studentName}: <em>${n.note}</em>`;
+                                ul.appendChild(li);
+                            });
+                            notesList.appendChild(ul);
+                            classReport.appendChild(notesList);
+                        }
+                        groupReport.appendChild(classReport);
+                    });
+                }
+                reportContent.appendChild(groupReport);
+            });
+        };
+
+
+        // --- MANIPULADORES DE EVENTOS ---
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                tabContents.forEach(content => content.classList.add('hidden'));
+                document.getElementById(`tab-content-${tab.dataset.tab}`).classList.remove('hidden');
+                
+                // Renderizar conteúdo específico ao mudar de aba
+                if (tab.dataset.tab === 'relatorios') renderReport();
+                if (tab.dataset.tab === 'alunos') renderStudents();
+                if (tab.dataset.tab === 'turmas') renderGroups();
+                if (tab.dataset.tab === 'registo') {
+                    renderClasses();
+                    renderAttendanceList();
+                }
+            });
+        });
+
+        // Eventos de Turma
+        addGroupBtn.addEventListener('click', () => {
+            const name = newGroupNameInput.value.trim();
+            if (name) {
+                const newGroup = { id: `g_${Date.now()}`, name: name };
+                state.groups.push(newGroup);
+                state.currentGroupId = newGroup.id;
+                newGroupNameInput.value = '';
+                saveState();
+                renderAll();
+            }
+        });
+
+        groupList.addEventListener('click', e => {
+            const btn = e.target.closest('.delete-group-btn');
+            if (btn) {
+                const groupId = btn.dataset.groupId;
+                if (confirm('Tem a certeza que quer remover esta turma? TODOS os alunos, aulas e registos de presença associados serão apagados permanentemente.')) {
+                    // Cascading delete
+                    const classesToDelete = state.classes.filter(c => c.groupId === groupId).map(c => c.id);
+                    classesToDelete.forEach(classId => delete state.attendance[classId]);
+
+                    state.groups = state.groups.filter(g => g.id !== groupId);
+                    state.students = state.students.filter(s => s.groupId !== groupId);
+                    state.classes = state.classes.filter(c => c.groupId !== groupId);
+
+                    if (state.currentGroupId === groupId) {
+                        state.currentGroupId = state.groups[0]?.id || null;
+                    }
+                    saveState();
+                    renderAll();
+                }
+            }
+        });
+        
+        [groupSelectAlunos, groupSelectRegisto].forEach(select => {
+            select.addEventListener('change', () => {
+                state.currentGroupId = select.value;
+                // Sincronizar o outro select
+                const otherSelect = select === groupSelectAlunos ? groupSelectRegisto : groupSelectAlunos;
+                otherSelect.value = state.currentGroupId;
+                
+                renderClasses();
+                renderStudents();
+                renderAttendanceList();
+                saveState();
+            });
+        });
+
+        // Eventos de Alunos
+        addStudentBtn.addEventListener('click', () => {
+            const name = newStudentNameInput.value.trim();
+            if (name && state.currentGroupId) {
+                const newStudent = { id: `s_${Date.now()}`, name: name, groupId: state.currentGroupId };
+                state.students.push(newStudent);
+                // Adicionar registo de presença para este aluno em todas as aulas da sua turma
+                state.classes.filter(c => c.groupId === state.currentGroupId).forEach(cls => {
+                    if (!state.attendance[cls.id]) state.attendance[cls.id] = {};
+                    state.attendance[cls.id][newStudent.id] = { status: 'ausente', note: '' };
+                });
+                newStudentNameInput.value = '';
+                saveState();
+                renderStudents();
+                renderAttendanceList();
+            }
+        });
+        
+        studentList.addEventListener('click', (e) => {
+            const btn = e.target.closest('.delete-student-btn');
+            if (btn) {
+                const studentId = btn.dataset.studentId;
+                if (confirm('Tem a certeza que quer remover este aluno?')) {
+                    state.students = state.students.filter(s => s.id !== studentId);
+                    Object.keys(state.attendance).forEach(classId => {
+                        delete state.attendance[classId][studentId];
+                    });
+                    saveState();
+                    renderStudents();
+                    renderAttendanceList();
+                }
+            }
+        });
+
+        // Eventos de Registo
+        addClassBtn.addEventListener('click', () => {
+            if (!state.currentGroupId) {
+                alert("Por favor, selecione ou crie uma turma primeiro.");
+                return;
+            }
+            const className = prompt('Nome da nova aula/sessão:', `Aula ${new Date().toLocaleDateString('pt-PT')}`);
+            if (className) {
+                const newClass = { id: `c_${Date.now()}`, name: className, groupId: state.currentGroupId };
+                state.classes.push(newClass);
+                state.currentClassId = newClass.id;
+                // Inicializar presenças para a nova aula
+                state.attendance[newClass.id] = {};
+                state.students.filter(s => s.groupId === state.currentGroupId).forEach(student => {
+                    state.attendance[newClass.id][student.id] = { status: 'ausente', note: '' };
+                });
+                saveState();
+                renderClasses();
+                renderAttendanceList();
+            }
+        });
+
+        classSelect.addEventListener('change', () => {
+            state.currentClassId = classSelect.value;
+            saveState();
+            renderAttendanceList();
+        });
+
+        attendanceList.addEventListener('click', (e) => {
+            const btn = e.target.closest('.status-btn');
+            if (btn) {
+                const studentId = btn.dataset.studentId;
+                const classId = state.currentClassId;
+                const currentRecord = state.attendance[classId][studentId];
+                const currentStatus = currentRecord.status;
+                const nextStatus = statusConfig[currentStatus].next;
+                
+                state.attendance[classId][studentId].status = nextStatus;
+                
+                if (nextStatus === 'atraso' || nextStatus === 'ausente') {
+                    showNotesModal(studentId);
+                } else {
+                    state.attendance[classId][studentId].note = '';
+                }
+
+                saveState();
+                renderAttendanceList(); // Apenas re-renderiza a lista de presenças
+            }
+        });
+
+        // --- LÓGICA DO MODAL DE NOTAS ---
+        const showNotesModal = (studentId) => {
+            studentIdForNote = studentId;
+            const record = state.attendance[state.currentClassId][studentId];
+            notesTextarea.value = record.note || '';
+            notesModal.classList.remove('hidden');
+            setTimeout(() => notesModalContent.classList.remove('scale-95', 'opacity-0'), 10);
+        };
+
+        const hideNotesModal = () => {
+            notesModalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                notesModal.classList.add('hidden');
+                studentIdForNote = null;
+            }, 200);
+        };
+
+        saveNoteBtn.addEventListener('click', () => {
+            if (studentIdForNote) {
+                state.attendance[state.currentClassId][studentIdForNote].note = notesTextarea.value.trim();
+                saveState();
+                renderAttendanceList();
+                hideNotesModal();
+            }
+        });
+
+        cancelNoteBtn.addEventListener('click', hideNotesModal);
+
+        // --- LÓGICA DO TEMA (MODO ESCURO) ---
+        const applyTheme = () => {
+            if (state.theme === 'dark') {
+                document.documentElement.classList.add('dark');
+                themeIconLight.classList.add('hidden');
+                themeIconDark.classList.remove('hidden');
+            } else {
+                document.documentElement.classList.remove('dark');
+                themeIconLight.classList.remove('hidden');
+                themeIconDark.classList.add('hidden');
+            }
+        };
+
+        themeToggle.addEventListener('click', () => {
+            state.theme = state.theme === 'light' ? 'dark' : 'light';
+            saveState();
+            applyTheme();
+        });
+
+        // --- INICIALIZAÇÃO ---
+        const init = () => {
+            loadState();
+            applyTheme();
+            renderAll();
+        };
+
+        init();
+    });
+    </script>
+</body>
+</html>

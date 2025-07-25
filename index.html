@@ -43,6 +43,12 @@
         .fade-in {
             animation: fadeIn 0.3s ease-out forwards;
         }
+        
+        /* Estilo para botões desativados */
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
     </style>
     <script>
         // Configuração do Tailwind para modo escuro
@@ -209,36 +215,30 @@
         };
 
         // --- ELEMENTOS DO DOM ---
-        // ... (elementos gerais)
         const themeToggle = document.getElementById('theme-toggle');
         const themeIconLight = document.getElementById('theme-icon-light');
         const themeIconDark = document.getElementById('theme-icon-dark');
         const tabs = document.querySelectorAll('.tab-button');
         const tabContents = document.querySelectorAll('.tab-content');
         
-        // Elementos de Turmas
         const newGroupNameInput = document.getElementById('new-group-name');
         const addGroupBtn = document.getElementById('add-group-btn');
         const groupList = document.getElementById('group-list');
         const groupSelectAlunos = document.getElementById('group-select-alunos');
         const groupSelectRegisto = document.getElementById('group-select-registo');
 
-        // Elementos de Alunos
         const studentManagementArea = document.getElementById('student-management-area');
         const noGroupSelectedAlunos = document.getElementById('no-group-selected-alunos');
         const newStudentNameInput = document.getElementById('new-student-name');
         const addStudentBtn = document.getElementById('add-student-btn');
         const studentList = document.getElementById('student-list');
 
-        // Elementos de Registo
         const classSelect = document.getElementById('class-select');
         const addClassBtn = document.getElementById('add-class-btn');
         const attendanceList = document.getElementById('attendance-list');
         
-        // Elementos de Relatórios
         const reportContent = document.getElementById('report-content');
         
-        // Elementos do Modal
         const notesModal = document.getElementById('notes-modal');
         const notesModalContent = document.getElementById('notes-modal-content');
         const notesTextarea = document.getElementById('notes-textarea');
@@ -263,7 +263,6 @@
             if (savedState) {
                 state = JSON.parse(savedState);
             } else {
-                // Estado inicial para novos utilizadores
                 const groupId = `g_${Date.now()}`;
                 const studentId1 = `s_${Date.now()}_1`;
                 const studentId2 = `s_${Date.now()}_2`;
@@ -297,26 +296,30 @@
             renderStudents();
             renderClasses();
             renderAttendanceList();
-            updatePlaceholders();
+            updatePlaceholdersAndButtons();
         };
 
-        const updatePlaceholders = () => {
-            // Placeholders de Turmas
+        const updatePlaceholdersAndButtons = () => {
+            // Placeholders e botões de Turmas
             document.getElementById('no-groups-gestao').classList.toggle('hidden', state.groups.length > 0);
             
-            // Placeholders de Alunos
+            // Placeholders e botões de Alunos
             const hasGroups = state.groups.length > 0;
-            studentManagementArea.classList.toggle('hidden', !hasGroups);
-            noGroupSelectedAlunos.classList.toggle('hidden', hasGroups);
-            if (state.currentGroupId) {
+            const isGroupSelected = !!state.currentGroupId;
+            studentManagementArea.classList.toggle('hidden', !isGroupSelected);
+            noGroupSelectedAlunos.classList.toggle('hidden', isGroupSelected || !hasGroups);
+            addStudentBtn.disabled = !isGroupSelected;
+
+            if (isGroupSelected) {
                 const studentsInGroup = state.students.filter(s => s.groupId === state.currentGroupId);
                 document.getElementById('no-students-gestao').classList.toggle('hidden', studentsInGroup.length > 0);
             }
 
-            // Placeholders de Registo
+            // Placeholders e botões de Registo
+            addClassBtn.disabled = !isGroupSelected;
             const classesInGroup = state.classes.filter(c => c.groupId === state.currentGroupId);
-            document.getElementById('no-class-registo').classList.toggle('hidden', !state.currentGroupId || classesInGroup.length > 0);
-            attendanceList.innerHTML = ''; // Limpa a lista para não mostrar alunos de outra turma
+            document.getElementById('no-class-registo').classList.toggle('hidden', !isGroupSelected || classesInGroup.length > 0);
+            
             if (state.currentClassId) {
                 const classInfo = state.classes.find(c => c.id === state.currentClassId);
                 if (classInfo) {
@@ -361,13 +364,13 @@
                 `;
                 groupList.appendChild(div);
             });
-            updatePlaceholders();
+            updatePlaceholdersAndButtons();
         };
 
         const renderStudents = () => {
             studentList.innerHTML = '';
             if (!state.currentGroupId) {
-                updatePlaceholders();
+                updatePlaceholdersAndButtons();
                 return;
             }
             const studentsInGroup = state.students.filter(s => s.groupId === state.currentGroupId);
@@ -382,7 +385,7 @@
                 `;
                 studentList.appendChild(div);
             });
-            updatePlaceholders();
+            updatePlaceholdersAndButtons();
         };
 
         const renderClasses = () => {
@@ -406,19 +409,18 @@
                     }
                     classSelect.appendChild(option);
                 });
-                // Garante que currentClassId é válido para a turma atual
                 if (!classesInGroup.some(c => c.id === state.currentClassId)) {
                     state.currentClassId = classesInGroup[0]?.id || null;
                     if (state.currentClassId) classSelect.value = state.currentClassId;
                 }
             }
-            updatePlaceholders();
+            updatePlaceholdersAndButtons();
         };
 
         const renderAttendanceList = () => {
             attendanceList.innerHTML = '';
             if (!state.currentClassId) {
-                updatePlaceholders();
+                updatePlaceholdersAndButtons();
                 return;
             }
             const classInfo = state.classes.find(c => c.id === state.currentClassId);
@@ -451,7 +453,7 @@
                 div.appendChild(button);
                 attendanceList.appendChild(div);
             });
-            updatePlaceholders();
+            updatePlaceholdersAndButtons();
         };
         
         const renderReport = () => {
@@ -534,7 +536,6 @@
                 tabContents.forEach(content => content.classList.add('hidden'));
                 document.getElementById(`tab-content-${tab.dataset.tab}`).classList.remove('hidden');
                 
-                // Renderizar conteúdo específico ao mudar de aba
                 if (tab.dataset.tab === 'relatorios') renderReport();
                 if (tab.dataset.tab === 'alunos') renderStudents();
                 if (tab.dataset.tab === 'turmas') renderGroups();
@@ -545,7 +546,6 @@
             });
         });
 
-        // Eventos de Turma
         addGroupBtn.addEventListener('click', () => {
             const name = newGroupNameInput.value.trim();
             if (name) {
@@ -563,7 +563,6 @@
             if (btn) {
                 const groupId = btn.dataset.groupId;
                 if (confirm('Tem a certeza que quer remover esta turma? TODOS os alunos, aulas e registos de presença associados serão apagados permanentemente.')) {
-                    // Cascading delete
                     const classesToDelete = state.classes.filter(c => c.groupId === groupId).map(c => c.id);
                     classesToDelete.forEach(classId => delete state.attendance[classId]);
 
@@ -583,7 +582,6 @@
         [groupSelectAlunos, groupSelectRegisto].forEach(select => {
             select.addEventListener('change', () => {
                 state.currentGroupId = select.value;
-                // Sincronizar o outro select
                 const otherSelect = select === groupSelectAlunos ? groupSelectRegisto : groupSelectAlunos;
                 otherSelect.value = state.currentGroupId;
                 
@@ -594,13 +592,11 @@
             });
         });
 
-        // Eventos de Alunos
         addStudentBtn.addEventListener('click', () => {
             const name = newStudentNameInput.value.trim();
             if (name && state.currentGroupId) {
                 const newStudent = { id: `s_${Date.now()}`, name: name, groupId: state.currentGroupId };
                 state.students.push(newStudent);
-                // Adicionar registo de presença para este aluno em todas as aulas da sua turma
                 state.classes.filter(c => c.groupId === state.currentGroupId).forEach(cls => {
                     if (!state.attendance[cls.id]) state.attendance[cls.id] = {};
                     state.attendance[cls.id][newStudent.id] = { status: 'ausente', note: '' };
@@ -628,10 +624,9 @@
             }
         });
 
-        // Eventos de Registo
         addClassBtn.addEventListener('click', () => {
             if (!state.currentGroupId) {
-                alert("Por favor, selecione ou crie uma turma primeiro.");
+                // O botão estará desativado, mas esta é uma segurança extra.
                 return;
             }
             const className = prompt('Nome da nova aula/sessão:', `Aula ${new Date().toLocaleDateString('pt-PT')}`);
@@ -639,7 +634,6 @@
                 const newClass = { id: `c_${Date.now()}`, name: className, groupId: state.currentGroupId };
                 state.classes.push(newClass);
                 state.currentClassId = newClass.id;
-                // Inicializar presenças para a nova aula
                 state.attendance[newClass.id] = {};
                 state.students.filter(s => s.groupId === state.currentGroupId).forEach(student => {
                     state.attendance[newClass.id][student.id] = { status: 'ausente', note: '' };
@@ -656,11 +650,23 @@
             renderAttendanceList();
         });
 
+        // --- CORREÇÃO APLICADA AQUI ---
         attendanceList.addEventListener('click', (e) => {
             const btn = e.target.closest('.status-btn');
             if (btn) {
                 const studentId = btn.dataset.studentId;
                 const classId = state.currentClassId;
+
+                // Verificações de segurança para garantir que os dados existem
+                if (!classId || !state.attendance[classId]) {
+                    console.error("Erro: Tentativa de registo sem aula selecionada ou inicializada.");
+                    return;
+                }
+                if (!state.attendance[classId][studentId]) {
+                    // Se o registo do aluno não existir para esta aula, cria-o na hora
+                    state.attendance[classId][studentId] = { status: 'ausente', note: '' };
+                }
+                
                 const currentRecord = state.attendance[classId][studentId];
                 const currentStatus = currentRecord.status;
                 const nextStatus = statusConfig[currentStatus].next;
@@ -674,7 +680,7 @@
                 }
 
                 saveState();
-                renderAttendanceList(); // Apenas re-renderiza a lista de presenças
+                renderAttendanceList();
             }
         });
 
